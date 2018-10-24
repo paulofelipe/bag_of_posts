@@ -1,0 +1,17 @@
+name: "bag_of_posts"
+title: Bag of Posts
+description: |
+  Bag of Posts
+output_dir: "docs"
+base_url: https://paulofelipe.github.io/
+navbar:
+  logo:
+    image: images/briefcase.png
+  right:
+    - text: "Posts"
+      href: index.html
+    - text: "Sobre"
+      href: about.html
+output: 
+  radix::radix_article:
+    css: styles.css

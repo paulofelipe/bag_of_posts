@@ -1,0 +1,14 @@
+---
+title: "Sobre o Blog"
+---
+
+## Boas vindas
+
+Em primeiro lugar, obrigado pela sua visita! Esperamos que o blog seja útil e traga alguma dica que possa facilitar o uso do R pelo leitor. 
+
+## Sobre o Blog
+
+A ideia do blog é ser um repositório de informações sobre o R que possam ser úteis, não somente aos visitantes, como também aos próprios autores. Com isso, não iremos criar um conteúdo pré-ordenado, mas um conjunto de posts que abordem informações que achamos interessantes a ponto de compartilhar. Críticas e sugestões são sempre bem-vindas! 
+  
+O nome do blog vem de um trocadilho (infeliz) com uma das técnicas utilizadas em processamento de liguagem natural: *bag-of-words*.
+
