@@ -3,7 +3,7 @@ title: Bag of Posts
 description: |
   Bag of Posts
 output_dir: "docs"
-base_url: https://paulofelipe.github.io/
+base_url: 
 navbar:
   logo:
     image: images/briefcase.png
