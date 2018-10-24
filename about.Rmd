@@ -1,5 +1,5 @@
 ---
-title: "Sobre o Blog"
+title: "Sobre"
 ---
 
 ## Boas vindas
