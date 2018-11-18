@@ -44,7 +44,7 @@
   <!--radix_placeholder_rmarkdown_metadata-->
   
   <script type="text/json" id="radix-rmarkdown-metadata">
-  {"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["title","description","author","date","output"]}},"value":[{"type":"character","attributes":{},"value":["Mapa Coroplético com ggplot2"]},{"type":"character","attributes":{},"value":["Neste post, é apresentado como é simples criar um mapa coroplético com o ggplot2.\n"]},{"type":"list","attributes":{},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","url"]}},"value":[{"type":"character","attributes":{},"value":["Paulo Felipe Alencar"]},{"type":"character","attributes":{},"value":["https://github.com/paulofelipe"]}]}]},{"type":"character","attributes":{},"value":["10-21-2018"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["radix::radix_article"]}},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["self_contained"]}},"value":[{"type":"logical","attributes":{},"value":[false]}]}]}]}
+  {"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["title","description","author","date","output","categories"]}},"value":[{"type":"character","attributes":{},"value":["Mapa Coroplético com ggplot2"]},{"type":"character","attributes":{},"value":["Neste post, é apresentado como é simples criar um mapa coroplético com o ggplot2.\n"]},{"type":"list","attributes":{},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","url"]}},"value":[{"type":"character","attributes":{},"value":["Paulo Felipe Alencar"]},{"type":"character","attributes":{},"value":["https://github.com/paulofelipe"]}]}]},{"type":"character","attributes":{},"value":["10-21-2018"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["radix::radix_article"]}},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["self_contained"]}},"value":[{"type":"logical","attributes":{},"value":[false]}]}]},{"type":"character","attributes":{},"value":["Visualizações","ggplot2"]}]}
   </script>
   <!--/radix_placeholder_rmarkdown_metadata-->
   
@@ -990,7 +990,7 @@ list.files(tmp_dir, pattern = &quot;*.shp&quot;)</code></pre>
 br_uf &lt;- st_read(file.path(tmp_dir, &quot;BRUFE250GC_SIR.shp&quot;),
                  stringsAsFactors = FALSE)</code></pre>
 <pre><code>
-Reading layer `BRUFE250GC_SIR&#39; from data source `C:\Users\paulo\AppData\Local\Temp\RtmpKgcKhz\BRUFE250GC_SIR.shp&#39; using driver `ESRI Shapefile&#39;
+Reading layer `BRUFE250GC_SIR&#39; from data source `C:\Users\paulo\AppData\Local\Temp\RtmpEn90cG\BRUFE250GC_SIR.shp&#39; using driver `ESRI Shapefile&#39;
 Simple feature collection with 27 features and 3 fields
 geometry type:  MULTIPOLYGON
 dimension:      XY
@@ -1061,16 +1061,16 @@ epsg (SRID):    NA
 proj4string:    +proj=longlat +ellps=GRS80 +no_defs
 First 10 features:
           NM_ESTADO    NM_REGIAO CD_GEOCUF  SALARIO
-1              ACRE        NORTE        12 1631.577
-2           ALAGOAS     NORDESTE        27 1590.543
-3             AMAPÁ        NORTE        16 1340.277
-4          AMAZONAS        NORTE        13 1132.661
-5             BAHIA     NORDESTE        29 1640.421
-6             CEARÁ     NORDESTE        23 1528.956
-7  DISTRITO FEDERAL CENTRO-OESTE        53 1509.587
-8    ESPÍRITO SANTO      SUDESTE        32 1471.619
-9             GOIÁS CENTRO-OESTE        52 1584.872
-10         MARANHÃO     NORDESTE        21 1146.836
+1              ACRE        NORTE        12 1278.210
+2           ALAGOAS     NORDESTE        27 1306.136
+3             AMAPÁ        NORTE        16 1380.608
+4          AMAZONAS        NORTE        13 1623.627
+5             BAHIA     NORDESTE        29 1579.192
+6             CEARÁ     NORDESTE        23 1350.264
+7  DISTRITO FEDERAL CENTRO-OESTE        53 1759.505
+8    ESPÍRITO SANTO      SUDESTE        32 1471.604
+9             GOIÁS CENTRO-OESTE        52 1637.488
+10         MARANHÃO     NORDESTE        21 1698.312
                          geometry
 1  MULTIPOLYGON (((-73.18253 -...
 2  MULTIPOLYGON (((-35.46753 -...
