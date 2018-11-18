@@ -4,6 +4,7 @@ description: |
   Bag of Posts
 output_dir: "docs"
 base_url: https://paulofelipe.github.io/bag_of_posts/
+google_analytics: "UA-128114372-1"
 navbar:
   right:
     - text: "Posts"
