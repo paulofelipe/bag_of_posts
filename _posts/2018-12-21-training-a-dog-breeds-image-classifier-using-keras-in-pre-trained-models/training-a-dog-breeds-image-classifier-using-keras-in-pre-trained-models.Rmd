@@ -1,0 +1,347 @@
+---
+title: "Training a Dog Breeds Image Classifier using Keras in Pre-Trained Models"
+description: |
+  A short description of the post.
+author:
+  - name: Paulo Felipe Alencar
+    url: https://github.com/paulofelipe
+date: 12-21-2018
+output:
+  radix::radix_article:
+    self_contained: false
+draft: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Introduction
+
+In this post, we will create a simple dog breeds classifierin R. Although the number of images is relatively small (10222 images), it is possible to use pre-trained models and extract features that will allow us to train the classifier.
+
+The Keras package will be used. Our classifier has reached% in validation.
+
+## Packages
+
+```{r, echo = TRUE}
+library(keras)
+library(tidyverse)
+library(rsample)
+library(glue)
+library(magick)
+library(patchwork)
+library(furrr)
+```
+
+
+## Data
+
+Os dados para treinar o classificados está disponível no [Kaggle](www.kaggle.com). Você pode baixar diretamente na [página da competição](https://www.kaggle.com/c/dog-breed-identification). Se você tem a biblioteca python da API do Kaggle configurada no seu computador, é possível obter os dados usando o seguinte comando:
+
+```{bash, echo = TRUE, eval = FALSE}
+kaggle competitions download -c dog-breed-identification
+```
+
+Uma vez que você baixou os dados e dezipou o arquivo, a pasta terá os seguintes arquivos/pastas:
+
+```{r, echo = TRUE}
+# Caminho da pasta principal
+data_path <- 'dog_breeds'
+list.files(data_path)
+```
+
+```{r, echo=TRUE}
+labels <- read_csv(file.path(data_path, 'labels.csv')) %>% 
+  mutate(label_id = as.numeric(as.factor(breed)) - 1)
+glimpse(labels)
+```
+
+O número de classes é igual a 120.
+
+```{r, echo=TRUE}
+length(unique(labels$breed))
+```
+
+Vamos ver algumas imagens:
+
+```{r, echo = TRUE}
+show_image <- function(id, breed){
+  file.path(data_path, "train", glue("{id}.jpg")) %>% 
+    image_read() %>% 
+    image_ggplot() +
+    labs(title = breed) +
+    theme(
+      plot.title = element_text(hjust = 0.5)
+    )
+}
+
+set.seed(3011)
+labels %>% 
+  select(-label_id) %>% 
+  sample_n(4) %>% 
+  pmap(., show_image) %>% 
+  wrap_plots()
+
+```
+
+## Train and Validation Split
+
+O código abaixo cria dois data.frames um com dados para treinamento e outro para validação. Utilizaremos 90% das imagens que estão na pasta `train` para treinar o modelo. As demais imagens serão utilizadas para validação do modelo.
+
+```{r, echo=TRUE}
+set.seed(93891)
+labels <- initial_split(labels, prop = 0.9)
+
+train_data <- training(labels)
+
+valid_data <- testing(labels)
+
+```
+
+
+## Extraindo as Features a partir de modelos pré-treinados
+
+Para treinar uma classificador de imagens, existem três estratégicas básicas:
+
+* Treinar um novo modelo do zero;
+
+* Usar um modelo pré-treinado e fazer um finetuning em algumas camadas do modelo;
+
+* Extrair as features da base convolucional do modelo e treinar um novo classificador a partir dessas features.
+
+Utilizaremos a terceira abordagem. Essa abordagem é mais indicada para quando a base de treinamento é pequena (número pequenos de imagens por classe) e ela se aproxima em algum grau das imagens que foram utilizadas no treinamento do modelo que utilizaremos para extrair as features ([veja aqui](https://www.kdnuggets.com/2018/12/solve-image-classification-problem-quickly-easily.html)). Como o modelo que utilizaremos foi treinado usando imagens que continham imagens de cachorros, podemos assumir que o modelo pré-treinado pode servir como base para o nosso novo classificador.
+
+O modelo que utilizaremos como base é o *Inception-ResNet v2*  que foi treinado com imagens da base ImageNet. Para criar um objeto com esse modelo, pode-se executar o código abaixo:
+
+```{r, echo=TRUE}
+xception_model <- application_xception(
+  include_top = FALSE,
+  weights = 'imagenet',
+  input_shape = c(299, 299, 3),
+  pooling = 'avg'
+)
+
+inception_model <- application_inception_resnet_v2(
+  include_top = FALSE,
+  weights = 'imagenet',
+  input_shape = c(299, 299, 3),
+  pooling = 'avg'
+)
+```
+
+No prómixo passo, iremos criar os "geradores" de imagens. Isto é, objetos que fornecem _batches_ de imagens que serão preprocessadas e usadas como input no modelo base e a saída são as features que serão utilizadas como inputs no classificador de raças que iremos treinar.
+
+Em primeiro lugar, iremos criar o gerador. Para o gerador de imagens de treinamento, utilizaremos uma técnica denomina "aumento de dados", que consiste em alterar as imagens originais na tentativa de aumentar o número de observações que serão utilizadas no treinamento. Isto ajuda a generalização do nosso modelo, uma vez que temos poucas imagens para cada classe.
+
+```{r}
+batch_size <- 16L
+image_size <- c(299L, 299L)
+classes <- unique(train_data$breed)
+
+img_gen_train <- image_data_generator(
+  rotation_range = 30,
+  zoom_range = 0.2,
+  width_shift_range = 0.2,
+  height_shift_range = 0.2,
+  horizontal_flip = TRUE
+)
+
+train_gen <- img_gen_train$flow_from_dataframe(
+  dataframe = train_data,
+  directory = 'dog_breeds/train/',
+  x_col = "id",
+  y_col = "breed",
+  classes = classes,
+  has_ext = FALSE,
+  target_size = image_size,
+  batch_size = batch_size
+)
+```
+
+Fazemos o mesmo para validação, mas não iremos "aumentar" os dados:
+
+```{r}
+img_gen_valid <- image_data_generator()
+
+valid_gen <- img_gen_valid$flow_from_dataframe(
+  dataframe = valid_data,
+  directory = 'dog_breeds/train/',
+  x_col = "id",
+  y_col = "breed",
+  classes = classes,
+  has_ext = FALSE,
+  target_size = c(299L,299L),
+  batch_size = batch_size
+)
+```
+
+Agora, vamos definir a função que extrai as features. Essa função tem dois argumentos: um gerador de imagens e o número de batches de imagens que serão utilizados. Assim, se o tamanho do batch é 16 e definimos 10 batches, serão extraídos dados para 160 imagens. A função retorna uma matriz de input e uma matriz de targets.
+
+```{r}
+extract_features <- function(image_generator, num_batches = 10){
+  
+  data <- map(1:num_batches, ~{
+    g <- generator_next(image_generator)
+    
+    x1 <- g[[1]] %>% 
+      xception_preprocess_input() %>% 
+      predict(xception_model, .)
+    
+    x2 <- g[[1]] %>% 
+      inception_resnet_v2_preprocess_input() %>% 
+      predict(inception_model, .)
+    
+    x <- cbind(x1, x2)
+    
+    list(x = x, y = g[[2]])
+  })
+  
+  x <- map(data, "x") %>% 
+    reduce(rbind)
+  
+  y <- map(data, "y") %>% 
+    reduce(rbind)
+  
+  return(list(x = x, y = y))
+}
+```
+
+Primeiro vamos extrair os dados de treinamentos. Vamos criar uma base de treinamento com 18400 imagens. A nossa base de treinamento tem apenas `r nrow(train_data)` 9200 imagens, mas como estamos utilizando transformações das imagens originais, nenhuma imagen será exatamente repetida. Claro que o ideal seria obter uma base maior de imagens realmente diferentes.
+
+```{r}
+data_tr <- extract_features(train_gen,
+                            num_batches = ceiling(train_gen$n/batch_size * 2)
+                              )
+xtrain <- data_tr$x
+ytrain <- data_tr$y
+rm(data_tr)
+```
+
+```{r}
+data_vl <- extract_features(valid_gen, num_batches = ceiling(valid_gen$n/batch_size))
+xvalid <- data_vl$x
+yvalid <- data_vl$y
+rm(data_vl)
+```
+
+
+## Treinando o Classificador
+
+```{r}
+source('E:/Documentos/keras_r/rscripts/lr_finder.R')
+source('E:/Documentos/keras_r/rscripts/one_cycle_learn.R')
+```
+
+
+```{r}
+create_model <- function(lr = 1e-3){
+  model <- keras_model_sequential()
+    
+  model %>%
+    layer_dense(1024, activation = "relu") %>% 
+    layer_dropout(0.5) %>% 
+    layer_dense(units = 120, activation = 'softmax')
+  
+  model %>%
+    compile(optimizer = optimizer_adam(lr = lr),
+            loss = 'categorical_crossentropy',
+            metrics = "accuracy")
+  
+  return(model)
+}
+
+model <- create_model()
+
+batch_size <- 256
+
+lrf <- lr_finder$new(
+  min_lr = 1e-6,
+  max_lr = 1e0,
+  step_size = ceiling(nrow(xtrain)/batch_size)
+)
+
+history <- model %>%
+  fit(
+    xtrain, ytrain,
+    batch_size = batch_size,
+    epochs = 1,
+    validation_data = list(xvalid, yvalid),
+    callbacks = list(lrf)
+  )
+
+lrf$lr_plot()
+```
+
+```{r}
+ocl <- one_cycle_learn$new(
+  max_lr = 0.01,
+  n_train = nrow(xtrain),
+  epochs = 10
+)
+model <- create_model(lr = 1e-3)
+
+history <- model %>%
+  fit(
+    xtrain, ytrain,
+    batch_size = batch_size,
+    epochs = 20,
+    validation_data = list(xvalid, yvalid)
+  )
+```
+
+
+
+```{r}
+img_gen <- image_data_generator(
+  rotation_range = 30,
+  zoom_range = 0.3,
+  width_shift_range = 0.3,
+  height_shift_range = 0.3,
+  horizontal_flip = TRUE
+)
+
+train_gen <- flow_images_from_directory(
+  directory = 'dog_breeds/test',
+  target_size = c(299,299),
+  batch_size = 16,
+  generator = image_data_generator(
+    preprocessing_function = inception_resnet_v2_preprocess_input
+  ),
+  class_mode = "categorical"
+)
+
+train_gen$n
+```
+
+```{r}
+base_model <- application_inception_resnet_v2(weights = 'imagenet',
+                                              include_top = FALSE,
+                                              input_shape = c(299, 299, 3),
+                                              pooling = 'avg')
+
+predictions <- base_model$output %>%  
+  layer_dense(units = 120, activation = 'softmax')
+
+model <- keras_model(inputs = base_model$input, outputs = predictions)
+
+freeze_weights(model, to = 781)
+model %>% 
+  compile(optimizer = optimizer_adam(lr = 1e-2, beta_1 = 0.9, beta_2 = 0.99),
+          loss = 'categorical_crossentropy',
+          metrics = "accuracy")
+
+lrf <- lr_finder$new(
+  min_lr = 1e-6,
+  max_lr = 0.1,
+  step_size = ceiling(train_gen$n/32)
+)
+
+history <- model %>% 
+  fit_generator(
+    generator = train_gen,
+    steps_per_epoch = train_gen$n
+  )
+
+```
+
