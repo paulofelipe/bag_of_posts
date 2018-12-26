@@ -181,7 +181,15 @@ Agora, vamos definir a função que extrai as features. Essa função tem dois a
 ```{r}
 extract_features <- function(image_generator, num_batches = 10){
   
-  data <- map(1:num_batches, ~{
+  xception_out <- dim(xception_model$output)[[2]]
+  inception_out <- dim(inception_model$output)[[2]]
+  n_features <- xception_out + inception_out
+  
+  x <- matrix(NA, num_batches * batch_size, n_features)
+  y <- matrix(NA, num_batches * batch_size, length(classes))
+  
+  for(i in 1:num_batches){
+    print(i)
     g <- generator_next(image_generator)
     
     x1 <- g[[1]] %>% 
@@ -192,17 +200,36 @@ extract_features <- function(image_generator, num_batches = 10){
       inception_resnet_v2_preprocess_input() %>% 
       predict(inception_model, .)
     
-    x <- cbind(x1, x2)
+    idx <- (1 + (i - 1) * batch_size):(batch_size + (i - 1) * batch_size)
+    idx <- idx[1:nrow(x1)]
+    x[idx,] <- cbind(x1, x2)
+    y[idx,] <- g[[2]]
     
-    list(x = x, y = g[[2]])
-  })
+  }
+  # data <- map(1:num_batches, ~{
+  #   g <- generator_next(image_generator)
+  #   
+  #   x1 <- g[[1]] %>% 
+  #     xception_preprocess_input() %>% 
+  #     predict(xception_model, .)
+  #   
+  #   x2 <- g[[1]] %>% 
+  #     inception_resnet_v2_preprocess_input() %>% 
+  #     predict(inception_model, .)
+  #   
+  #   x <- cbind(x1, x2)
+  #   
+  #   list(x = x, y = g[[2]])
+  # })
+  # 
+  # x <- map(data, "x") %>% 
+  #   reduce(rbind)
+  # 
+  # y <- map(data, "y") %>% 
+  #   reduce(rbind)
   
-  x <- map(data, "x") %>% 
-    reduce(rbind)
-  
-  y <- map(data, "y") %>% 
-    reduce(rbind)
-  
+  x <- x[complete.cases(x),]
+  y <- y[complete.cases(y),]
   return(list(x = x, y = y))
 }
 ```
@@ -213,6 +240,7 @@ Primeiro vamos extrair os dados de treinamentos. Vamos criar uma base de treinam
 data_tr <- extract_features(train_gen,
                             num_batches = ceiling(train_gen$n/batch_size * 2)
                               )
+
 xtrain <- data_tr$x
 ytrain <- data_tr$y
 rm(data_tr)
@@ -238,13 +266,11 @@ source('E:/Documentos/keras_r/rscripts/one_cycle_learn.R')
 create_model <- function(lr = 1e-3){
   model <- keras_model_sequential()
     
-  model %>%
-    layer_dense(1024, activation = "relu") %>% 
-    layer_dropout(0.5) %>% 
+  model %>% 
     layer_dense(units = 120, activation = 'softmax')
   
   model %>%
-    compile(optimizer = optimizer_adam(lr = lr),
+    compile(optimizer = optimizer_adadelta(lr = lr),
             loss = 'categorical_crossentropy',
             metrics = "accuracy")
   
@@ -279,16 +305,26 @@ ocl <- one_cycle_learn$new(
   n_train = nrow(xtrain),
   epochs = 10
 )
-model <- create_model(lr = 1e-3)
+model <- create_model(lr = 1e-1)
 
 history <- model %>%
   fit(
     xtrain, ytrain,
     batch_size = batch_size,
-    epochs = 20,
+    epochs = 100,
     validation_data = list(xvalid, yvalid)
   )
 ```
+```{r}
+evaluate(model, xvalid, yvalid)
+```
+
+
+```{r}
+plot(history) +
+  theme_minimal()
+```
+
 
 
 
