@@ -59,10 +59,7 @@ list.files(data_path)
 ```
 
 ```{r, echo=TRUE}
-set.seed(3391091)
-labels <- read_csv(file.path(data_path, 'labels.csv')) %>% 
-  mutate(label_id = as.numeric(as.factor(breed)) - 1) %>% 
-  sample_frac(0.1)
+labels <- read_csv(file.path(data_path, 'labels.csv')) 
 glimpse(labels)
 ```
 
@@ -87,7 +84,6 @@ show_image <- function(id, breed){
 
 set.seed(3011)
 labels %>% 
-  select(-label_id) %>% 
   sample_n(4) %>% 
   pmap(., show_image) %>% 
   wrap_plots()
@@ -142,7 +138,7 @@ In the next step, we will create the image generators. That is, objects that pro
 First, we will create the generators. For the training image generator, we will use a technique called "data augmentation", which consists in altering the original images in an attempt to increase the number of observations that will be used in the training. This helps our model to generalize better, since we have few images for each class.
 
 ```{r}
-batch_size <- 8L
+batch_size <- 16L
 image_size <- c(299L, 299L)
 classes <- sort(unique(train_data$breed))
 
@@ -464,7 +460,7 @@ history <- model %>%
 lrf$lr_plot()
 ```
 
-Looking at the figure above, we set the learning rate at 0.01.
+Looking at the figure above, we set the learning rate at 0.001.
 
 In addition, the fastai authors indicate a callback that allows us to fit the model using a method called one cycle policy. As optimizer, [they use the AdamW](https://www.fast.ai/2018/07/02/adam-weight-decay/). However, considering that otpimizer is not readily available in keras, we use the Adam optimizer. For details about the one cycle policy I recommend [this post](https://sgugger.github.io/the-1cycle-policy.html)^[In the AdamW implementation, instead of the cyclical momentum the `beta_1` parameter varies during the training.].
 
@@ -472,7 +468,7 @@ In addition, the fastai authors indicate a callback that allows us to fit the mo
 ```{r, echo=TRUE}
 ocl <- one_cycle_learn$new(
   max_lr = 1e-3,
-  div_factor = 10,
+  div_factor = 25,
   n_train = nrow(xtrain),
   batch_size = batch_size,
   epochs = 10
@@ -534,7 +530,7 @@ Por fim, vamos gerar as predições para a base de teste. Para usar a função `
 
 ```{r, echo=TRUE}
 test_files <- data.frame(
-  id = list.files(file.path(data_path, 'test'))[1:100],
+  id = list.files(file.path(data_path, 'test')),
   breed = NA,
   stringsAsFactors = FALSE
 )
