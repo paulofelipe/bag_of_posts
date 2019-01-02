@@ -182,17 +182,18 @@ valid_gen <- img_gen_valid$flow_from_dataframe(
 Now let's define the function that extracts the features. This function has two arguments: an image generator and the number of batches of images that will be used. So if the size of the batch is 16 and we define 10 batches, data will be extracted for 160 images. The function returns an input matrix and an array of targets.
 
 ```{r}
-extract_features <- function(image_generator, num_batches = 10){
+extract_features <- function(image_generator, steps = 10){
   
   xception_out <- dim(xception_model$output)[[2]]
   inception_out <- dim(inception_model$output)[[2]]
   n_features <- xception_out + inception_out
   
-  x <- matrix(NA, num_batches * batch_size, n_features)
-  y <- matrix(NA, num_batches * batch_size, length(classes))
+  x <- matrix(NA, steps * batch_size, n_features)
+  y <- matrix(NA, steps * batch_size, length(classes))
   
-  for(i in 1:num_batches){
-    
+  pb <- progress_estimated(n = steps)
+  for(i in 1:steps){
+    pb$tick()$print()
     g <- generator_next(image_generator)
     
     x1 <- g[[1]] %>% 
@@ -220,7 +221,7 @@ First let's extract the features from the training images. We are going to creat
 
 ```{r}
 data_tr <- extract_features(train_gen,
-                            num_batches = ceiling(train_gen$n/batch_size * 2))
+                            steps = ceiling(train_gen$n/batch_size * 2))
 
 xtrain <- data_tr$x
 ytrain <- data_tr$y
@@ -228,7 +229,7 @@ rm(data_tr)
 ```
 
 ```{r}
-data_vl <- extract_features(valid_gen, num_batches = ceiling(valid_gen$n/batch_size))
+data_vl <- extract_features(valid_gen, steps = ceiling(valid_gen$n/batch_size))
 xvalid <- data_vl$x
 yvalid <- data_vl$y
 rm(data_vl)
@@ -548,10 +549,10 @@ test_gen <- test_gen$flow_from_dataframe(
   batch_size = 8L
 )
 
-custom_generator <- function(test_gen){
+custom_generator <- function(generator){
   
   function(){
-    data <- generator_next(test_gen)
+    data <- generator_next(generator)
     input <- data
     
     if(!is.null(test_gen$class_mode)){
