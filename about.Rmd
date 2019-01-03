@@ -1,0 +1,21 @@
+---
+title: "Sobre"
+---
+
+## Boas vindas
+
+Em primeiro lugar, obrigado pela sua visita! Espero que o blog seja útil e traga alguma dica que possa facilitar o uso do R pelo leitor. 
+
+## Sobre o Blog
+
+A ideia do blog é ser um repositório de informações sobre o R que possam ser úteis, não somente aos visitantes, como também ao próprio autor. Com isso, o conteúdo não será criado de maneira pré-ordenada, mas será um conjunto de posts que abordem informações que sejam interessantes a ponto de compartilhar. Críticas e sugestões são sempre bem-vindas! 
+  
+O nome do blog vem de um trocadilho (infeliz) com uma das técnicas utilizadas em processamento de liguagem natural: *bag-of-words*.
+
+## Sobre o Autor
+
+Meu nome é Paulo Felipe. Sou Economista de formação, mas tenho interesse em qualquer coisa que envolva dados + programação. Naturalmente, acabei no mundo da "ciência de dados". 
+
+Tenho interesse em aprender sobre dados de maneira geral, visualizações e aprendizado de máquina. 
+
+Caso você queira entrar em contato, [este é o meu twitter](https://twitter.com/paulofelipeao).

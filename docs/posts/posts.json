@@ -1,0 +1,65 @@
+[
+  {
+    "path": "posts/2018-12-21-training-a-dog-breeds-image-classifier-using-keras-in-pre-trained-models/",
+    "title": "Training a Dog Breed Image Classifier using Keras and Pre-Trained Models",
+    "description": "In this post we train Dog Breed Image Classifier in R using the Keras package and pre-trained models. The code could be easily adapted to similar problems.",
+    "author": [
+      {
+        "name": "Paulo Felipe Alencar",
+        "url": "https://github.com/paulofelipe"
+      }
+    ],
+    "date": "2019-01-02",
+    "categories": [
+      "Deep Learning",
+      "Kaggle",
+      "Keras",
+      "Computer Vision"
+    ],
+    "preview": "posts/2018-12-21-training-a-dog-breeds-image-classifier-using-keras-in-pre-trained-models/training-a-dog-breeds-image-classifier-using-keras-in-pre-trained-models_files/figure-html5/unnamed-chunk-6-1.png",
+    "last_modified": "2019-01-02T20:02:04-05:00",
+    "preview_width": 1248,
+    "preview_height": 768
+  },
+  {
+    "path": "posts/2018-10-24-classificando-comentrios-txicos/",
+    "title": "Classificando Comentários Tóxicos com o R",
+    "description": "Nesse post, vamos criar um classificador de comentários tóxicos a partir de uma\nbase de dados disponibilizada em uma competição do Kaggle. Serão utilizadas \ntécnicas chamadas de bag-of-words e tf-idf.",
+    "author": [
+      {
+        "name": "Paulo Felipe Alencar",
+        "url": "https://github.com/paulofelipe"
+      }
+    ],
+    "date": "2018-11-18",
+    "categories": [
+      "NLP",
+      "Kaggle",
+      "Aprendizado de Máquina"
+    ],
+    "preview": "posts/2018-10-24-classificando-comentrios-txicos/classificando-comentrios-txicos_files/figure-html5/unnamed-chunk-5-1.png",
+    "last_modified": "2018-12-26T08:48:19-05:00",
+    "preview_width": 1248,
+    "preview_height": 768
+  },
+  {
+    "path": "posts/2018-10-21-mapa-coropltico-com-ggplot2/",
+    "title": "Mapa Coroplético com ggplot2",
+    "description": "Neste post, é apresentado como é simples criar um mapa coroplético com o ggplot2.",
+    "author": [
+      {
+        "name": "Paulo Felipe Alencar",
+        "url": "https://github.com/paulofelipe"
+      }
+    ],
+    "date": "2018-10-21",
+    "categories": [
+      "Visualizações",
+      "ggplot2"
+    ],
+    "preview": "posts/2018-10-21-mapa-coropltico-com-ggplot2/mapa-coropltico-com-ggplot2_files/figure-html5/unnamed-chunk-7-1.png",
+    "last_modified": "2018-12-26T08:48:19-05:00",
+    "preview_width": 1248,
+    "preview_height": 768
+  }
+]
