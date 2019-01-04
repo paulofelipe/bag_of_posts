@@ -1,7 +1,7 @@
 ---
-title: "Training a Dog Breed Image Classifier using Keras and Pre-Trained Models"
+title: "Treinando um Classificador de Raças de Cães utilizando o Keras e Modelos Pré-Treinados"
 description: |
-  In this post we train Dog Breed Image Classifier in R using the Keras package and pre-trained models. The code could be easily adapted to similar problems.
+  Neste post, iremos treinar uma classificador de raças de cães usando o pacote Keras e modelos pré-treinados no R. O código pode ser facilmente adaptado para problemas similares.
 author:
   - name: Paulo Felipe Alencar
     url: https://github.com/paulofelipe
@@ -21,17 +21,16 @@ categories:
 knitr::opts_chunk$set(echo = FALSE)
 ```
 
-## Introduction
+## Introdução
 
-In this post, we will create a simple dog breeds classifierin R. Although the number of images is relatively small (10222 images), it is possible to use pre-trained models and extract features that will allow us to train the classifier.
+Neste post, iremos criar um simples classificador de raças de cães no R. Apesar do número de imagens ser relativamente pequeno (10222 imagens), é possível usar modelos pré-treinados e extrair _features_ que nos permitirão treinar o classificador.
 
-The Keras package will be used. Our classifier has reached 91% in validation.
+O pacote Keras será usado. O classificador alcançou uma acurácia de 91% no conjunto de validação. Para os dados de testes, é possível apenas o obter o logloss ao submeter as predições no Kaggle.
 
-In addition, we also try to implement some callbacks that are taught in the [fastai course](https://course.fast.ai/).
+Adicionalmente, nós tentamos implementar alguns callbacks que contém técnicas que são ensinadas no curso [fastai course](https://course.fast.ai/).
 
-## Packages
-
-These are the packages that will be used in this post:
+## Pacotes
+Estes são os pacotes que serão usados neste post:
 
 ```{r, echo = TRUE}
 library(keras)
@@ -42,15 +41,15 @@ library(magick)
 library(patchwork)
 ```
 
-## Data
+## Dados
 
-The data for training the classifier is available on [Kaggle] (www.kaggle.com). You can download directly from the [competition page] (https://www.kaggle.com/c/dog-breed-identification). If you have the Kaggle API python library configured on your computer, you can get the data using the following command:
+Os dados utilizados para treinar o classificador estão no disponíveis no [Kaggle](www.kaggle.com). Você pode baixar diretamente na [página da competição](https://www.kaggle.com/c/dog-breed-identification). Se você possui a biblioteca Python da API do Kaggle configurada no seu computador, é possível baixar os dados usando esse comando:
 
 ```{bash, echo = TRUE, eval = FALSE}
 kaggle competitions download -c dog-breed-identification
 ```
 
-Once you have downloaded the data and the file has been unziped, the folder will have the following files/folders:
+Uma vez que você tenha baixado os dados e os arquivos tenham sido dezipados, a sua pasta de dados deverá ter os seguintes arquivos/pastas:
 
 ```{r, echo = TRUE}
 # Path to the main folder
@@ -58,18 +57,21 @@ data_path <- 'dog_breeds'
 list.files(data_path)
 ```
 
+Aqui, lemos o arquivo com o rótulo de cada imagem:
+
 ```{r, echo=TRUE}
-labels <- read_csv(file.path(data_path, 'labels.csv')) 
+labels <- read_csv(file.path(data_path, 'labels.csv')) %>% 
+  sample_frac(0.1)
 glimpse(labels)
 ```
 
-The number of classes is equal to 120.
+O número total de classes é igual a 120:
 
 ```{r, echo=TRUE}
 length(unique(labels$breed))
 ```
 
-Let's see some images:
+Vamos visualizar algumas imagens:
 
 ```{r, echo = TRUE}
 show_image <- function(id, breed){
@@ -90,9 +92,9 @@ labels %>%
 
 ```
 
-## Train and Validation Split
+## Separação dos dados em treino e validação
 
-The code below creates two data.frames, one for training and another for validation. We will use 90% of the images that are in the `train` folder to train the model. The remaining images will be used to validate the model.
+O código abaixo cria dois data.frames, o primeiro será utilizado para treinamento e o segundo para validação. 90% das imagens que estão na pasta `train` serão utilizadas para treinar o modelo. As imagens restantes serão utilizadas para validar o modelo.
 
 ```{r, echo=TRUE}
 set.seed(93891)
@@ -103,19 +105,19 @@ train_data <- training(labels)
 valid_data <- testing(labels)
 ```
 
-## Extracting features from pre-trained models
+## Extraindo as features a partir de modelos pré-treinados
 
-To train an image classifier, there are three basic strategies:
+Para treinar um classificador de imagens, existem três estratégicas básicas:
 
-* Train a new model from scratch;
+* Treinar um novo modelo do zero;
 
-* Use a pre-trained model and do a finetuning on some model layers;
+* Usar um modelo pré-treinado e realizar um ajuste (_fine tuning_) em algumas camadas desse modelo, além acoplar umas camadas adicionais;
 
-* Extract the features from the convolutional base of the model and train a new classifier using these features.
+* Extrair as _features_ a partir da base convolucional do modelo e treinar um novo classificador usando essas _features_.
 
-We will use the third approach. This approach is best suited for when the training base is small (small number of images per class) and it approaches to some degree the images that were used in the training of the model that we will use to extract the features ([see here] : //www.kdnuggets.com/2018/12/solve-image-classification-problem-quickly-easily.html)). As the model we will use has been trained using images that contained pictures of dogs, we can assume that the pre-trained model can serve as the basis for our new classifier.
+Nós usaremos a terceira abordagem. Esta estratégia é indicada para quando a base de treinamento é pequena (um pequeno número de imagens por classe) e as imagens que serão utilizadas são de alguma forme similares a imagens que foram usadas no treinamento do modelo pré-treinado ([veja aqui](www.kdnuggets.com/2018/12/solve-image-classification-problem-quickly-easily.html). Como os modelos pré-treinados que serão utilizados foram treinados em uma base que possui imagens de cachorros, vamos assumir que esses modelos podem servir de base para o nosso novo classificador.
 
-We will combine the features extracted from two models: *Xception* and *Inception-ResNet v2*. Both models were trained with images from the ImageNet database. To create objects with these models, you can execute the following code:
+Serão combinadas _features_ de dois modelos: *Xception* e *Inception-ResNet v2*. Ambos os modelos foram treinados utilizando imagens da base _ImageNet_. Para criar os objetos com esses dois modelos, podemos executar o código abaixo:
 
 ```{r, echo=TRUE}
 xception_model <- application_xception(
@@ -133,9 +135,9 @@ inception_model <- application_inception_resnet_v2(
 )
 ```
 
-In the next step, we will create the image generators. That is, objects that provide batches of images that will be preprocessed and used as input in the base model and the output are the features that will be used as inputs in the breed classifier that we will train.
+No próximo passo, nós vamos criar os "geradores de imagens". Isto é, objetos que irão prover lotes de imagens que serão preprocessadas e usadas como input no modelo base. Como saída, serão geradas as _features_ que serão utilizadas posteriormente como inputs no classificador de raças que iremos treinar.
 
-First, we will create the generators. For the training image generator, we will use a technique called "data augmentation", which consists in altering the original images in an attempt to increase the number of observations that will be used in the training. This helps our model to generalize better, since we have few images for each class.
+Para o gerador de imagens de treinamento, vamos utilizar uma técnica chamada de aumento de dados (_data augmentation_), que consiste em alterar as imagens originais na tentativa de aumentar o tamanho da base que será usada no treinamento. Em regra, esse método ajuda o modelo a generalizar mais, principalmente quando temos poucas imagens para cada classe.
 
 ```{r}
 batch_size <- 16L
@@ -162,7 +164,7 @@ train_gen <- img_gen_train$flow_from_dataframe(
 )
 ```
 
-We do the same for validation, but we will not "augment" the data:
+Fazemos o mesmo para a validação, mas não utilizaremos o aumento de dados.
 
 ```{r}
 img_gen_valid <- image_data_generator()
@@ -179,7 +181,7 @@ valid_gen <- img_gen_valid$flow_from_dataframe(
 )
 ```
 
-Now let's define the function that extracts the features. This function has two arguments: an image generator and the number of batches of images that will be used. So if the size of the batch is 16 and we define 10 batches, data will be extracted for 160 images. The function returns an input matrix and an array of targets.
+Agora, vamos definir a função que irá extrair de fato as _features_. Esta função tem dois argumentos: um gerador de imagens e o número de _batches_ que serão processados. Como definimos acima, cada _batch_ tem 16 imagens. A função retorna uma matriz de inputs e uma matriz de targets.
 
 ```{r}
 extract_features <- function(image_generator, num_batches = 10){
@@ -216,7 +218,7 @@ extract_features <- function(image_generator, num_batches = 10){
 }
 ```
 
-First let's extract the features from the training images. We are going to create a training data for 18400 images. Our training set only has `r nrow (train_data)` 9200 images, but since we are using transformations of the original images, no image will be exactly repeated. Of course the ideal would be to get a larger base of really different images.
+Primeiro vamos extrair as _features_ das imagens de treinamento. No vamos criar uma uma matriz de input com 18400 observações, ou seja, o dobro do número de imagens que estão listadas em `train_data` (`r nrow(train_data)`). Como estamos alterando as imagens aleatoriamente, nenhuma imagem será de fato repetida.
 
 ```{r}
 data_tr <- extract_features(train_gen,
@@ -235,7 +237,7 @@ rm(data_vl)
 ```
 
 
-## Training the Classifier
+## Treinando o classificador
 
 ```{r, echo=FALSE, eval=TRUE}
 lr_finder <- R6::R6Class("lrFinder",
@@ -416,7 +418,7 @@ one_cycle_learn <- R6::R6Class(
 
 ```
 
-After extracting the features, we are going to train a classifier that will have as inputs the `r nrow (xtrain)` variables obtained and as output a vector with probabilities for each one of the 120 classes. The `create_model()` function creates our model.
+Após a extração das features, iremos treinar o classificador que terá como input as `r ncol(xtrain)` variáveis obtidas e, como output, um vetor de probabilidades para cada uma das 120 classes. A função `create_model()`, como o nome diz, cria o nosso modelo.
 
 ```{r, echo = TRUE}
 create_model <- function(lr = 1e-3){
@@ -436,7 +438,7 @@ create_model <- function(lr = 1e-3){
 
 ```
 
-To choose the learning rate, we use a callback that is inspired (that is, attempted to replicate) by the [fastai library] (https://docs.fast.ai/). Let's set a minimum rate and a maximum rate. The "training" will start at the lowest rate and after each batch the learning rate is updated towards the maximum rate. The learning rate will be chosen looking at the results. It is indicated to choose the rate at which the loss function is declining but not at its minimum value.
+Para a escolher a _learning rate_, vamos usar um callback que foi inspirado (isto é, uma tentativa de replicação) na biblioteca [fastai](https://docs.fast.ai/). Vamos setar uma taxa mínima e uma máxima. O treinamento irá começar com a menor taxa e, após cada iteração, a _learning rate_ será atualizada em direção ao seu valor máximo. A taxa será escolhida observando os resultados. Indica-se escolher uma taxa na qual a função de perda esteja decrescendo, mas não esteja no seu mínimo.
 
 ```{r, echo = TRUE}
 model <- create_model()
@@ -461,9 +463,9 @@ history <- model %>%
 lrf$lr_plot()
 ```
 
-Looking at the figure above, we set the learning rate at 0.001.
+Olhando a figura abaixo, um valor possível seria 0.01. No entanto, setando a _learning rate_ para 0.001, foram obtidos melhores resultados.
 
-In addition, the fastai authors indicate a callback that allows us to fit the model using a method called one cycle policy. As optimizer, [they use the AdamW](https://www.fast.ai/2018/07/02/adam-weight-decay/). However, considering that otpimizer is not readily available in keras, we use the Adam optimizer. For details about the one cycle policy I recommend [this post](https://sgugger.github.io/the-1cycle-policy.html)^[In the AdamW implementation, instead of the cyclical momentum the `beta_1` parameter varies during the training.].
+Adicionalmente, os autores do _fastai_ indicam a utilização do método conhecido como _one cycle policy_ no momento do treinamento do modelo. Como otimizador, [eles usam o AdamW](https://www.fast.ai/2018/07/02/adam-weight-decay/). Entretanto, este otimizador não está disponível no keras por default. Assim, iremos utilizar o Adam. Para detalhes sobre o _one cycle policy_, eu recomendo [este post](https://sgugger.github.io/the-1cycle-policy.html)^[Na implementação com AdamW, no lugar de utilizar ciclos do parâmetro _momentum_ do otimizador SGD, o parâmetro `beta_1` varia durante o treinamento.].
 
 
 ```{r, echo=TRUE}
@@ -473,7 +475,7 @@ ocl <- one_cycle_learn$new(
   pct_start = 0.5,
   n_train = nrow(xtrain),
   batch_size = batch_size,
-  epochs = 4
+  epochs = 10
 )
 model <- create_model(lr = 1e-3)
 
@@ -481,14 +483,14 @@ history <- model %>%
   fit(
     xtrain, ytrain,
     batch_size = batch_size,
-    epochs = 4,
+    epochs = 10,
     validation_data = list(xvalid, yvalid),
     verbose = 1,
     callbacks = list(ocl)
   )
 ```
 
-In the figures below, it is possible to see how the learning rate and the 'beta_1` parameters changed during the training.
+Na figura abaixo, é possível ver como a _learning rate_ e o parâmetro `beta_1` variam durante o treinamento.
 
 ```{r, echo=TRUE}
 lr_plot <- ocl$history %>% 
@@ -512,23 +514,22 @@ momentum_plot <- ocl$history %>%
 lr_plot / momentum_plot
 ```
 
-The history plot:
+O gráfico com os valores da função de perda e da acurácia para as bases de treino e validação:
 
 ```{r, echo=TRUE}
 plot(history) +
   theme_minimal()
 ```
 
-The final validation score:
+O score final para o conjunto de validação:
 
 ```{r, echo=TRUE}
 evaluate(model, xvalid, yvalid)
 ```
 
+## Predições para o conjunto de teste
 
-## Predictions on the Test Set
-
-Por fim, vamos gerar as predições para a base de teste. Para usar a função `predict_generator()`, é necessário criar um gerador que preprocesse nossas imagens e retorne matrizes no mesmo formato que foi usado no treinamento do modelo. A função `custom_generator()` faz esse trabalho para a gente.
+Por fim, vamos gerar as predições para a base de teste. Para usar a função `predict_generator()`, é necessário criar um gerador que preprocesse as imagens e retorne matrizes no mesmo formato que foi usado no treinamento do modelo. A função `custom_generator()` faz esse trabalho para a gente.
 
 ```{r, echo=TRUE}
 test_files <- data.frame(
@@ -581,7 +582,7 @@ custom_generator <- function(test_gen){
 }
 ``` 
 
-Creating the generator and making predictions:
+Agora vamos criar o gerador e realizar as predições utilizando a função `predict_generator()`:
 
 ```{r, echo=TRUE}
 test_generator <- custom_generator(test_gen)
@@ -601,9 +602,9 @@ test_preds <- test_files %>%
 dim(test_preds)
 ```
 
-## Auxliary Functions
+## Funções Auxiliares
 
-The code for the one cycle policy callback is inspired by [this repository](https://github.com/titu1994/keras-one-cycle). Unfortunately, I have lost the original link to the original code of learning rate finder. =(
+O código para o callback do _one cycle policy_ é inspirado por [este repositório](https://github.com/titu1994/keras-one-cycle). Infelizmente, eu perdi o link original do repositório no qual eu me inspirei para escrever o callback para _learning rate finder_. =(
 
 ### Learning Rate Finder
 

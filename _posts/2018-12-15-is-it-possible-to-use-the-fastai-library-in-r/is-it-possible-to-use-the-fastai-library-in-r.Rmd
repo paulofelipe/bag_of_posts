@@ -1,0 +1,445 @@
+---
+title: "Is it possible to use the fastai library in R?"
+description: |
+  A short description of the post.
+author:
+  - name: Paulo Felipe Alencar
+    url: https://github.com/paulofelipe
+date: 12-15-2018
+output:
+  radix::radix_article:
+    self_contained: false
+draft: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introdução
+
+A biblioteca fastai é uma biblioteca desenvolvida com o intuido de facilitar (e muito) o treinamento de modelos de Deep Learning. Contudo, essa biblioteca está disponível para 
+a linguagem Python.
+
+```{r}
+library(keras)
+library(tidyverse)
+library(rsample)
+
+source('E:/Documentos/keras_r/rscripts/lr_finder.R')
+source('E:/Documentos/keras_r/rscripts/one_cycle_learn.R')
+
+list.files('dog_breeds/')
+
+labels <- read_csv('dog_breeds/labels.csv')
+head(labels)
+
+# set.seed(38011)
+# labels <- initial_split(labels, prop = 0.9)
+# train <- training(labels)
+# valid <- testing(labels)
+# 
+# dir.create('dog_breeds/data')
+# dir.create('dog_breeds/data/train')
+# dir.create('dog_breeds/data/valid')
+# classes <- unique(labels$data$breed)
+# 
+# for(i in classes){
+#   dir.create(file.path('dog_breeds/data/train/', i))
+#   dir.create(file.path('dog_breeds/data/valid/', i))
+# }
+# 
+# for(i in 1:nrow(train)){
+#   file_name <- paste0("dog_breeds/train/",train$id[i], ".jpg")
+#   file.copy(file_name, file.path('dog_breeds/data/train/', train$breed[i]))
+# }
+# 
+# for(i in 1:nrow(valid)){
+#   file_name <- paste0("dog_breeds/train/",valid$id[i], ".jpg")
+#   file.copy(file_name, file.path('dog_breeds/data/valid/', valid$breed[i]))
+# }
+```
+
+
+```{r}
+image_size <- c(299, 299)
+batch_size <- 16
+```
+
+```{r}
+img_gen <- image_data_generator(
+  preprocessing_function = inception_v3_preprocess_input,
+  #rescale = 1/255,
+  width_shift_range = 0.2,
+  height_shift_range = 0.2,
+  vertical_flip = FALSE,
+  rotation_range = 30,
+  horizontal_flip = TRUE,
+  zoom_range = 0.2
+)
+
+
+train_gen <- flow_images_from_directory(
+  directory = 'dog_breeds/data/train',
+  target_size = image_size,
+  batch_size = batch_size,
+  generator = img_gen,
+  class_mode = "categorical"
+)
+
+valid_gen <- flow_images_from_directory(
+  directory = 'dog_breeds/data/valid',
+  target_size = image_size,
+  batch_size = batch_size,
+  generator = image_data_generator(
+    preprocessing_function = inception_v3_preprocess_input
+  ),
+  class_mode = "categorical"
+)
+
+```
+
+```{r}
+model_fe <- application_inception_v3(weights = 'imagenet',
+                                     include_top = FALSE,
+                                     input_shape = c(image_size, 3),
+                                     pooling = "avg")
+
+```
+   
+```{r}
+number_of_batchs <- ceiling(train_gen$n/batch_size) * 2
+
+pb <- progress::progress_bar$new(total = number_of_batchs)
+
+new_data_train <- map(1:number_of_batchs, ~{
+  new_batch <- generator_next(train_gen)
+  x <- new_batch[[1]] %>% 
+    predict(model_fe, .) 
+  y <- new_batch[[2]]
+  pb$tick()
+  return(list(x = x, y = y))
+})
+
+x_train <- map(new_data_train, 'x') %>% reduce(rbind)
+y_train <- map(new_data_train, 'y') %>% reduce(rbind)
+```
+
+```{r}
+number_of_batchs <- ceiling(valid_gen$n/batch_size)
+
+pb <- progress::progress_bar$new(total = number_of_batchs)
+
+new_data_valid <- map(1:number_of_batchs, ~{
+  new_batch <- generator_next(valid_gen)
+  x <- new_batch[[1]] %>% 
+    predict(model_fe, .) 
+  y <- new_batch[[2]]
+  pb$tick()
+  return(list(x = x, y = y))
+})
+
+x_valid <- map(new_data_valid, 'x') %>% reduce(rbind)
+y_valid <- map(new_data_valid, 'y') %>% reduce(rbind)
+```
+
+```{r}
+model <- keras_model_sequential()
+
+model %>% 
+  layer_dense(units = 1024, activation = 'relu', input_shape = c(2048)) %>% 
+  layer_dropout(rate = 0.5) %>% 
+  # layer_dense(units = 512, activation = 'relu') %>%
+  # layer_dropout(rate = 0.25) %>%
+  layer_dense(units = 120, activation = 'softmax')
+
+# compile the model (should be done *after* setting layers to non-trainable)
+
+```
+
+```{r}
+lrf <- lr_finder$new(
+  min_lr = 1e-5,
+  max_lr = 1,
+  step_size = nrow(x_train)/batch_size
+)
+```
+
+```{r}
+model %>% 
+  compile(optimizer = optimizer_adam(lr = 0.0005, beta_1 = 0.9, beta_2 = 0.99),
+          loss = 'categorical_crossentropy',
+          metrics = "accuracy")
+```
+
+
+```{r}
+history <- model %>% 
+  fit(
+    x_train, y_train,
+    batch_size = batch_size,
+    epochs = 20,
+    validation_data = list(x_valid, y_valid)
+  )
+```
+
+
+```{r}
+base_model <- application_inception_v3(weights = 'imagenet',
+                                       include_top = FALSE,
+                                       input_shape = c(image_size, 3))
+
+predictions <- base_model$output %>% 
+  layer_global_average_pooling_2d() %>%  
+  layer_dense(units = 120, activation = 'softmax')
+
+model <- keras_model(inputs = base_model$input, outputs = predictions)
+
+freeze_weights(model, to = 311)
+```
+
+```{r}
+lrf <- lr_finder$new(
+  min_lr = 1e-5,
+  max_lr = 1,
+  step_size = train_gen$n/batch_size
+)
+```
+
+
+```{r}
+model %>% compile(optimizer = optimizer_adam(beta_1 = 0.9, beta_2 = 0.99),
+                  loss = 'categorical_crossentropy',
+                  metrics = "accuracy")
+model %>% 
+  fit_generator(
+    generator = train_gen,
+    steps_per_epoch = train_gen$n/batch_size,
+    epochs = 1,
+    validation_data = valid_gen,
+    validation_steps = valid_gen$n/batch_size,
+    callbacks = list(lrf)
+  )
+```
+
+```{r}
+base_model <- application_inception_v3(weights = 'imagenet',
+                                       include_top = FALSE,
+                                       input_shape = c(image_size, 3))
+
+predictions <- base_model$output %>% 
+  layer_global_average_pooling_2d() %>%  
+  layer_dense(units = 120, activation = 'softmax')
+
+model <- keras_model(inputs = base_model$input, outputs = predictions)
+
+freeze_weights(model, to = 311)
+
+model %>% compile(optimizer = optimizer_adam(lr = 0.005,
+                                             beta_1 = 0.9,
+                                             beta_2 = 0.99),
+                  loss = 'categorical_crossentropy',
+                  metrics = "accuracy")
+```
+
+```{r}
+model %>% 
+  fit_generator(
+    generator = train_gen,
+    steps_per_epoch = train_gen$n/batch_size,
+    epochs = 1,
+    validation_data = valid_gen,
+    validation_steps = valid_gen$n/batch_size
+  )
+```
+
+
+```{r}
+label_numeric <- as.numeric(as.factor(labels$breed))
+y_train <- to_categorical(y = label_numeric)
+```
+
+```{r}
+image_size <- c(224, 224)
+batch_size <- 16
+```
+
+```{r}
+base_model <- application_inception_v3(weights = 'imagenet',
+                                       include_top = FALSE,
+                                       input_shape = c(image_size, 3))
+
+
+# add our custom layers
+predictions <- base_model$output 
+
+model <- keras_model(inputs = base_model$input, outputs = predictions)
+
+freeze_weights(model, to = 311)
+
+model %>% compile(optimizer = 'rmsprop', loss = 'categorical_crossentropy')
+```
+
+
+
+```{r}
+model_fe <- application_inception_v3(weights = 'imagenet',
+                                     include_top = FALSE,
+                                     input_shape = c(image_size, 3),
+                                     pooling = "avg")
+feature_extractor <- function(file_name){
+  file_name <- paste0("dog_breeds/train/", file_name, ".jpg")
+  x <- image_load(file_name, target_size = image_size) %>% 
+    image_to_array %>% 
+    array_reshape(dim = c(1, dim(.))) %>% 
+    inception_v3_preprocess_input() 
+  
+  model_fe %>% predict(x)
+} 
+
+teste <- feature_extractor(labels$id[1])
+
+x_train <- array(0, dim = c(nrow(labels), dim(teste)[-1]))
+for(i in 1:nrow(labels)){
+  x_train[i,] <- feature_extractor(labels$id[i])
+}
+```
+
+```{r}
+number_of_batchs <- ceiling(train_gen$n/batch_size) * 2
+
+pb <- progress::progress_bar$new(total = number_of_batchs)
+
+new_data_train <- map(1:number_of_batchs, ~{
+  new_batch <- generator_next(train_gen)
+  x <- new_batch[[1]] %>% 
+    predict(model_fe, .) 
+  y <- new_batch[[2]]
+  pb$tick()
+  return(list(x = x, y = y))
+})
+
+x_train <- map(new_data_train, 'x') %>% reduce(rbind)
+y_train <- map(new_data_train, 'y') %>% reduce(rbind)
+```
+
+```{r}
+number_of_batchs <- ceiling(valid_gen$n/batch_size)
+
+pb <- progress::progress_bar$new(total = number_of_batchs)
+
+new_data_valid <- map(1:number_of_batchs, ~{
+  new_batch <- generator_next(valid_gen)
+  x <- new_batch[[1]] %>% 
+    predict(model_fe, .) 
+  y <- new_batch[[2]]
+  pb$tick()
+  return(list(x = x, y = y))
+})
+
+x_valid <- map(new_data_valid, 'x') %>% reduce(rbind)
+y_valid <- map(new_data_valid, 'y') %>% reduce(rbind)
+```
+
+
+```{r}
+abc <- img_gen$flow_from_dataframe(dataframe = labels, directory = 'dog_breeds/train', x_col = "id", y_col = "breed", has_ext = FALSE, target_size = image_size, class_mode = 'categorical', )
+
+generator_next(abc)
+```
+
+
+```{r}
+label_numeric <- as.numeric(as.factor(labels$breed))
+y_train <- to_categorical(y = label_numeric)
+```
+
+
+```{r}
+# par(mfrow=c(2,2))
+# for(i in sample(nrow(x_train), 4)){
+#   x_train[i,,,] %>% as.raster(max = 255) %>% plot()
+# }
+```
+
+```{r}
+model <- keras_model_sequential()
+
+model %>% 
+  layer_dense(units = 1024, activation = 'relu', input_shape = c(2048)) %>% 
+  layer_dropout(rate = 0.5) %>% 
+  # layer_dense(units = 512, activation = 'relu') %>%
+  # layer_dropout(rate = 0.25) %>%
+  layer_dense(units = 120, activation = 'softmax')
+
+# compile the model (should be done *after* setting layers to non-trainable)
+
+```
+
+```{r}
+lrf <- lr_finder$new(
+  min_lr = 1e-5,
+  max_lr = 1,
+  step_size = nrow(x_train)/batch_size
+)
+```
+
+```{r}
+ocl <- one_cycle_learn$new(
+  max_lr = 0.0005,
+  epochs = 20,
+  pct_start = 0.3,
+  n_train = nrow(x_train),
+  div_factor = 10,
+  batch_size = batch_size
+)
+```
+
+
+```{r}
+model %>% 
+  compile(optimizer = optimizer_adam(lr = 0.0005, beta_1 = 0.9, beta_2 = 0.99),
+          loss = 'categorical_crossentropy',
+          metrics = "accuracy")
+```
+
+
+```{r}
+history <- model %>% 
+  fit(
+    x_train, y_train,
+    batch_size = batch_size,
+    epochs = 20,
+    validation_data = list(x_valid, y_valid),
+    callbacks = list(ocl)
+  )
+```
+
+```{r}
+img_gen <- image_data_generator(
+  preprocessing_function = inception_v3_preprocess_input,
+  #rescale = 1/255,
+  width_shift_range = 0.2,
+  height_shift_range = 0.2,
+  vertical_flip = FALSE,
+  rotation_range = 30,
+  horizontal_flip = TRUE,
+  zoom_range = 0.2
+)
+
+idx_train <- sample(nrow(x_train), 0.8*nrow(x_train))
+
+train_gen <- flow_images_from_data(x = x_train[idx_train,],
+                                   y = y_train[idx_train],
+                                   generator = img_gen,
+                                   batch_size = batch_size)
+
+valid_gen <- flow_images_from_data(x = x_train[-idx_train,],
+                                   y = y_train[-idx_train],
+                                   generator = image_data_generator(
+                                     preprocessing_function = inception_v3_preprocess_input
+                                   ),
+                                   batch_size = batch_size)
+```
+
+
