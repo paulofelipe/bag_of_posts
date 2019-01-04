@@ -60,8 +60,7 @@ list.files(data_path)
 Aqui, lemos o arquivo com o rótulo de cada imagem:
 
 ```{r, echo=TRUE}
-labels <- read_csv(file.path(data_path, 'labels.csv')) %>% 
-  sample_frac(0.1)
+labels <- read_csv(file.path(data_path, 'labels.csv'))
 glimpse(labels)
 ```
 

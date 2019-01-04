@@ -7,14 +7,14 @@
     <description>Bag of Posts
 </description>
     <generator>Radix</generator>
-    <lastBuildDate>qua, 02 jan 2019 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Wed, 02 Jan 2019 00:00:00 +0000</lastBuildDate>
     <item>
-      <title>Training a Dog Breed Image Classifier using Keras and Pre-Trained Models</title>
+      <title>Treinando um Classificador de Raças de Cães utilizando o Keras e Modelos Pré-Treinados</title>
       <dc:creator>Paulo Felipe Alencar</dc:creator>
       <link>https://paulofelipe.github.io/bag_of_posts/posts/2018-12-21-training-a-dog-breeds-image-classifier-using-keras-in-pre-trained-models</link>
-      <description>In this post we train Dog Breed Image Classifier in R using the Keras package and pre-trained models. The code could be easily adapted to similar problems.</description>
+      <description>Neste post, iremos treinar uma classificador de raças de cães usando o pacote Keras e modelos pré-treinados no R. O código pode ser facilmente adaptado para problemas similares.</description>
       <guid>https://paulofelipe.github.io/bag_of_posts/posts/2018-12-21-training-a-dog-breeds-image-classifier-using-keras-in-pre-trained-models</guid>
-      <pubDate>qua, 02 jan 2019 00:00:00 +0000</pubDate>
+      <pubDate>Wed, 02 Jan 2019 00:00:00 +0000</pubDate>
       <media:content url="https://paulofelipe.github.io/bag_of_posts/posts/2018-12-21-training-a-dog-breeds-image-classifier-using-keras-in-pre-trained-models/training-a-dog-breeds-image-classifier-using-keras-in-pre-trained-models_files/figure-html5/unnamed-chunk-6-1.png" medium="image" type="image/png" width="1248" height="768"/>
     </item>
     <item>
@@ -25,7 +25,7 @@
 base de dados disponibilizada em uma competição do Kaggle. Serão utilizadas 
 técnicas chamadas de bag-of-words e tf-idf.</description>
       <guid>https://paulofelipe.github.io/bag_of_posts/posts/2018-10-24-classificando-comentrios-txicos</guid>
-      <pubDate>dom, 18 nov 2018 00:00:00 +0000</pubDate>
+      <pubDate>Sun, 18 Nov 2018 00:00:00 +0000</pubDate>
       <media:content url="https://paulofelipe.github.io/bag_of_posts/posts/2018-10-24-classificando-comentrios-txicos/classificando-comentrios-txicos_files/figure-html5/unnamed-chunk-5-1.png" medium="image" type="image/png" width="1248" height="768"/>
     </item>
     <item>
@@ -34,7 +34,7 @@ técnicas chamadas de bag-of-words e tf-idf.</description>
       <link>https://paulofelipe.github.io/bag_of_posts/posts/2018-10-21-mapa-coropltico-com-ggplot2</link>
       <description>Neste post, é apresentado como é simples criar um mapa coroplético com o ggplot2.</description>
       <guid>https://paulofelipe.github.io/bag_of_posts/posts/2018-10-21-mapa-coropltico-com-ggplot2</guid>
-      <pubDate>dom, 21 out 2018 00:00:00 +0000</pubDate>
+      <pubDate>Sun, 21 Oct 2018 00:00:00 +0000</pubDate>
       <media:content url="https://paulofelipe.github.io/bag_of_posts/posts/2018-10-21-mapa-coropltico-com-ggplot2/mapa-coropltico-com-ggplot2_files/figure-html5/unnamed-chunk-7-1.png" medium="image" type="image/png" width="1248" height="768"/>
     </item>
   </channel>

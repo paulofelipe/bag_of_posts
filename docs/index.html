@@ -525,6 +525,10 @@
   /* Tweak code blocks (note that this CSS is repeated above in an injection
      into the d-code shadow dom) */
   
+  d-code {
+    overflow-x: auto !important;
+  }
+  
   pre.d-code code.d-code {
     padding-left: 10px;
     font-size: 12px;
@@ -555,6 +559,11 @@
   }
   
   @media(min-width: 768px) {
+  
+  d-code {
+    overflow-x: visible !important;
+  }
+  
   pre.d-code code.d-code  {
       padding-left: 18px;
       font-size: 14px;
@@ -1367,7 +1376,7 @@
   padding-bottom: 12px;
 }
 .posts-list {
-  margin-top: 24px;
+  margin-top: 60px;
   margin-bottom: 24px;
 }
 
@@ -1501,9 +1510,6 @@
 @media(min-width: 768px) {
   .posts-list .post-preview h2 {
     font-size: 26px;
-  }
-  .posts-list {
-    margin-top: 60px;
   }
   .posts-list .post-preview .thumbnail {
     float: right;
@@ -1666,8 +1672,8 @@ function init_posts_list() {
 <img data-src="posts/2018-12-21-training-a-dog-breeds-image-classifier-using-keras-in-pre-trained-models/training-a-dog-breeds-image-classifier-using-keras-in-pre-trained-models_files/figure-html5/unnamed-chunk-6-1.png"/>
 </div>
 <div class="description">
-<h2>Training a Dog Breed Image Classifier using Keras and Pre-Trained Models</h2>
-<p>In this post we train Dog Breed Image Classifier in R using the Keras package and pre-trained models. The code could be easily adapted to similar problems.</p>
+<h2>Treinando um Classificador de Raças de Cães utilizando o Keras e Modelos Pré-Treinados</h2>
+<p>Neste post, iremos treinar uma classificador de raças de cães usando o pacote Keras e modelos pré-treinados no R. O código pode ser facilmente adaptado para problemas similares.</p>
 </div>
 </a>
 <a href="posts/2018-10-24-classificando-comentrios-txicos/" class="post-preview">
